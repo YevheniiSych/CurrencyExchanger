@@ -22,6 +22,10 @@ class ExchangerViewModel @Inject constructor(
         getRatesByCurrency()
     }
 
+    fun onEvent(event: ExchangerEvent) {
+
+    }
+
     private fun getRatesByCurrency() {
         viewModelScope.launch {
             val currencyRate =
