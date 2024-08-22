@@ -15,11 +15,18 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
+        buildFeatures.buildConfig = true
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
         }
+
+        buildConfigField(
+            "String",
+            "BASE_URL",
+            "\"https://developers.paysera.com\""
+        )
     }
 
     buildTypes {

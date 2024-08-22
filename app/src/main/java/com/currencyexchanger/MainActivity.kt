@@ -9,10 +9,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.currencyexchanger.ui.exchanger.ExchangerViewModel
 import com.currencyexchanger.ui.theme.CurrencyExchangerTheme
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -20,8 +25,10 @@ class MainActivity : ComponentActivity() {
         setContent {
             CurrencyExchangerTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+                    val viewModel = hiltViewModel<ExchangerViewModel>()
+                    val exchangerState = viewModel.stateFlow.collectAsState()
                     Greeting(
-                        name = "Android",
+                        name = exchangerState.value.selectedCurrencyRate.rates.toString(),
                         modifier = Modifier.padding(innerPadding)
                     )
                 }
