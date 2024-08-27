@@ -1,9 +1,12 @@
 package com.currencyexchanger.di
 
+import android.app.Application
+import androidx.room.Room
 import com.currencyexchanger.BuildConfig
 import com.currencyexchanger.data.remote.api.ExchangeRatesApi
 import com.currencyexchanger.data.repository.ExchangeRateRepository
 import com.currencyexchanger.data.repository.createExchangeRateRepository
+import com.currencyexchanger.data.room.ExchangerDatabase
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -18,11 +21,17 @@ object AppModule {
 
     @Provides
     @Singleton
+    fun provideExchangerDatabase(app: Application): ExchangerDatabase {
+        return Room.databaseBuilder(
+            app, ExchangerDatabase::class.java, ExchangerDatabase.DATABASE_NAME
+        ).createFromAsset("database/exchanger.db").build()
+    }
+
+    @Provides
+    @Singleton
     fun provideRetrofit(): Retrofit {
-        return Retrofit.Builder()
-            .baseUrl(BuildConfig.BASE_URL)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
+        return Retrofit.Builder().baseUrl(BuildConfig.BASE_URL)
+            .addConverterFactory(GsonConverterFactory.create()).build()
     }
 
     @Provides
@@ -33,7 +42,9 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideExchangeRateRepository(api: ExchangeRatesApi): ExchangeRateRepository {
-        return createExchangeRateRepository(api)
+    fun provideExchangeRateRepository(
+        api: ExchangeRatesApi, db: ExchangerDatabase
+    ): ExchangeRateRepository {
+        return createExchangeRateRepository(api, db)
     }
 }
