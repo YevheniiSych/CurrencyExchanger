@@ -179,24 +179,22 @@ class ExchangerViewModel @Inject constructor(
     }
 
     private fun getRatesByCurrency() {
-        viewModelScope.launch {
-            val currencyRate =
-                exchangeRateRepository.getRatesByCurrency().getOrNull() ?: return@launch
+        exchangeRateRepository.getRatesByCurrency().onEach { currencyRates ->
             val selectedCurrencyToBuy = if (stateFlow.value.selectedCurrencyToBuy == null) {
-                currencyRate.rates.keys.firstOrNull() ?: ""
+                currencyRates.rates.keys.firstOrNull() ?: ""
             } else {
                 stateFlow.value.selectedCurrencyToBuy
             }
 
             _stateFlow.update {
                 it.copy(
-                    selectedCurrencyRates = currencyRate,
+                    selectedCurrencyRates = currencyRates,
                     selectedCurrencyToBuy = selectedCurrencyToBuy
                 )
             }
 
-            updateCurrencyToBuyAmount(amountToSell ?: return@launch)
-        }
+            updateCurrencyToBuyAmount(amountToSell ?: return@onEach)
+        }.launchIn(viewModelScope)
     }
 
     private fun getRateByCurrency(currency: String): Double? {

@@ -5,11 +5,15 @@ import com.currencyexchanger.data.remote.model.CurrencyExchangeRate
 import com.currencyexchanger.data.room.ExchangerDatabase
 import com.currencyexchanger.data.room.balance.Balance
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
+import kotlin.coroutines.coroutineContext
 
 interface ExchangeRateRepository {
-    suspend fun getRatesByCurrency(): Result<CurrencyExchangeRate>
+    fun getRatesByCurrency(): Flow<CurrencyExchangeRate>
     fun getAllBalances(): Flow<List<Balance>>
     suspend fun upsertBalance(balance: Balance)
     suspend fun deleteBalance(balance: Balance)
@@ -28,12 +32,15 @@ private class ExchangeRateRepositoryImpl(
 ) :
     ExchangeRateRepository {
 
-    override suspend fun getRatesByCurrency(): Result<CurrencyExchangeRate> {
-        return try {
-            val currencyRates = api.getRatesByCurrency()
-            Result.success(currencyRates)
-        } catch (e: Exception) {
-            Result.failure(e)
+    override fun getRatesByCurrency(): Flow<CurrencyExchangeRate> = flow {
+        while (coroutineContext.isActive) {
+            try {
+                val currencyRates = api.getRatesByCurrency()
+                emit(currencyRates)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            delay(5000)
         }
     }
 

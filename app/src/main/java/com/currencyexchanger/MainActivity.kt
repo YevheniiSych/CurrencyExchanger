@@ -22,9 +22,6 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             CurrencyExchangerTheme {
-//                Scaffold {
-//
-//                }
                 Navigation()
             }
         }
