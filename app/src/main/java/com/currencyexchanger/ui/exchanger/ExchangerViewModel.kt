@@ -4,7 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.currencyexchanger.data.remote.model.ExchangeRates
 import com.currencyexchanger.data.repository.ExchangeRateRepository
+import com.currencyexchanger.data.room.balance.Balance
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.launchIn
@@ -120,7 +122,39 @@ class ExchangerViewModel @Inject constructor(
     }
 
     private fun submitExchange() {
-
+        viewModelScope.launch {
+            val amountToSell = amountToSell ?: return@launch
+            val currencyToBuy = selectedCurrencyToBuy ?: return@launch
+            val amountToBuy = amountToBuy ?: return@launch
+            val currencyToSell = selectedCurrencyToSell ?: return@launch
+            val currentBalanceToSellCurrency =
+                stateFlow.value.balances.firstOrNull { it.currency == currencyToSell }
+                    ?: return@launch
+            val currentBalanceAmountToBuyCurrency =
+                stateFlow.value.balances.firstOrNull { it.currency == currencyToBuy }?.amount
+                    ?: 0.0
+            if (currentBalanceToSellCurrency.amount < amountToSell) {
+                return@launch
+            }
+            val newBalanceToSell = Balance(
+                currencyToSell,
+                currentBalanceToSellCurrency.amount - amountToSell
+            )
+            val newBalanceToBuy = Balance(
+                currencyToBuy,
+                amountToBuy + currentBalanceAmountToBuyCurrency
+            )
+            exchangeRateRepository.run {
+                listOf(
+                    async {
+                        upsertBalance(newBalanceToSell)
+                    },
+                    async {
+                        upsertBalance(newBalanceToBuy)
+                    }
+                )
+            }
+        }
     }
 
     private fun getAllBalances() {
@@ -160,6 +194,8 @@ class ExchangerViewModel @Inject constructor(
                     selectedCurrencyToBuy = selectedCurrencyToBuy
                 )
             }
+
+            updateCurrencyToBuyAmount(amountToSell ?: return@launch)
         }
     }
 
@@ -177,7 +213,8 @@ class ExchangerViewModel @Inject constructor(
         if (currencyToSellAmount == null || currencyRateToBuy == null || currencyRateToSell == null) {
             return null
         }
-        return currencyRateToBuy * currencyRateToSell * currencyToSellAmount
+        val currencyToSellInBase = currencyToSellAmount / currencyRateToSell
+        return currencyToSellInBase * currencyRateToBuy
     }
 
     private fun getCurrencyAmountToSell(

@@ -43,6 +43,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.currencyexchanger.R
+import com.currencyexchanger.ui.exchanger.components.ExchangeRow
 import com.currencyexchanger.ui.theme.PrimaryBlue
 
 @Composable
@@ -161,88 +162,6 @@ fun ExchangerScreen(
     }
 }
 
-@Composable
-private fun ExchangeRow(
-    currencies: List<String>,
-    icon: Painter,
-    text: String,
-    currency: String,
-    amount: String,
-    onAmountChange: (amount: String) -> Unit,
-    onCurrencySelected: (currency: String) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-
-    var dropdownMenuExpanded by rememberSaveable {
-        mutableStateOf(false)
-    }
-
-    Row(
-        modifier = modifier,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            painter = icon,
-            contentDescription = "Sell icon",
-            tint = Color.Unspecified
-        )
-
-        Spacer(modifier = Modifier.width(10.dp))
-
-        Text(
-            text = text,
-            fontSize = 16.sp,
-        )
-
-        BasicTextField(
-            value = amount,
-            onValueChange = {
-                onAmountChange(it)
-            },
-            modifier = Modifier.weight(1f),
-            textStyle = TextStyle(
-                textAlign = TextAlign.End,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.W500,
-            ),
-            maxLines = 1,
-            keyboardOptions = KeyboardOptions.Default.copy(
-                keyboardType = KeyboardType.Decimal
-            )
-        )
-
-        Spacer(modifier = Modifier.width(10.dp))
-
-        Row(
-            modifier = Modifier.clickable {
-                dropdownMenuExpanded = true
-            }
-        ) {
-            Text(text = currency)
-
-            Icon(
-                imageVector = if (dropdownMenuExpanded) Icons.Default.KeyboardArrowUp
-                else Icons.Default.KeyboardArrowDown,
-                contentDescription = "Dropdown icon"
-            )
-
-            DropdownMenu(
-                expanded = dropdownMenuExpanded,
-                onDismissRequest = { dropdownMenuExpanded = false },
-            ) {
-                currencies.forEach { currency ->
-                    DropdownMenuItem(text = {
-                        Text(text = currency)
-                    }, onClick = {
-                        dropdownMenuExpanded = false
-                        onCurrencySelected(currency)
-                    })
-                }
-            }
-        }
-    }
-
-}
 
 @Composable
 @Preview
