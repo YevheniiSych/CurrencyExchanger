@@ -10,7 +10,16 @@ data class ExchangerState(
     val amountToSellInput: String = "100.0",
     val selectedCurrencyToBuy: String? = null,
     val amountToBuyInput: String = "100.0",
+    val lastConversion: LastConversion = LastConversion()
 ) {
+    data class LastConversion(
+        val commissionFee: Double = 0.0,
+        val currencySoldAmount: Double = 0.0,
+        val currencySold: String = "",
+        val currencyBoughtAmount: Double = 0.0,
+        val currencyBought: String = ""
+    )
+
     val currenciesToSell: List<String>
         get() = balances.map { it.currency }.filter { it in selectedCurrencyRates.rates.keys }
 

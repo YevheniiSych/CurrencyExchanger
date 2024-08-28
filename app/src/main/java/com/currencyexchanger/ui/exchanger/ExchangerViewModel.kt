@@ -7,8 +7,11 @@ import com.currencyexchanger.data.repository.ExchangeRateRepository
 import com.currencyexchanger.data.room.balance.Balance
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
@@ -20,8 +23,15 @@ class ExchangerViewModel @Inject constructor(
     private val exchangeRateRepository: ExchangeRateRepository
 ) : ViewModel() {
 
+    companion object {
+        private const val COMMISSION_FEE = 0.007
+    }
+
     private val _stateFlow = MutableStateFlow(ExchangerState())
     val stateFlow: StateFlow<ExchangerState> = _stateFlow
+
+    private val _eventFlow = MutableSharedFlow<ExchangerUIEvent>()
+    val eventFlow = _eventFlow.asSharedFlow()
 
     private val currencyRates: ExchangeRates
         get() = stateFlow.value.selectedCurrencyRates.rates
@@ -125,7 +135,6 @@ class ExchangerViewModel @Inject constructor(
         viewModelScope.launch {
             val amountToSell = amountToSell ?: return@launch
             val currencyToBuy = selectedCurrencyToBuy ?: return@launch
-            val amountToBuy = amountToBuy ?: return@launch
             val currencyToSell = selectedCurrencyToSell ?: return@launch
             val currentBalanceToSellCurrency =
                 stateFlow.value.balances.firstOrNull { it.currency == currencyToSell }
@@ -136,6 +145,12 @@ class ExchangerViewModel @Inject constructor(
             if (currentBalanceToSellCurrency.amount < amountToSell) {
                 return@launch
             }
+            val commissionFeeInSellCurrency = amountToSell * COMMISSION_FEE
+            val amountToBuy = getCurrencyAmountToBuy(
+                currencyRateToBuy,
+                currencyRateToSell,
+                amountToSell - commissionFeeInSellCurrency
+            ) ?: return@launch
             val newBalanceToSell = Balance(
                 currencyToSell,
                 currentBalanceToSellCurrency.amount - amountToSell
@@ -153,7 +168,21 @@ class ExchangerViewModel @Inject constructor(
                         upsertBalance(newBalanceToBuy)
                     }
                 )
+            }.awaitAll()
+            _stateFlow.update {
+                it.copy(
+                    lastConversion = ExchangerState.LastConversion(
+                        commissionFeeInSellCurrency,
+                        amountToSell,
+                        currencyToSell,
+                        amountToBuy,
+                        currencyToBuy
+                    )
+                )
             }
+            _eventFlow.emit(
+                ExchangerUIEvent.OnConversionCompleted
+            )
         }
     }
 

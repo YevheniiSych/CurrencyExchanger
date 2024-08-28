@@ -14,6 +14,9 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
@@ -24,16 +27,50 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.currencyexchanger.R
+import com.currencyexchanger.ui.exchanger.components.ConversionCompletedDialog
 import com.currencyexchanger.ui.exchanger.components.ExchangeRow
 import com.currencyexchanger.ui.theme.PrimaryBlue
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.flow
 
 @Composable
 fun ExchangerScreen(
     state: ExchangerState,
+    eventFlow: Flow<ExchangerUIEvent>,
     onEvent: (ExchangerEvent) -> Unit
 ) {
 
     val horizontalPadding = 10.dp
+
+    val showConversionCompletedDialog = rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    if (showConversionCompletedDialog.value) {
+        ConversionCompletedDialog(
+            text = stringResource(
+                R.string.conversion_completed_text,
+                state.lastConversion.currencySoldAmount,
+                state.lastConversion.currencySold,
+                state.lastConversion.currencyBoughtAmount,
+                state.lastConversion.currencyBought,
+                state.lastConversion.commissionFee
+            )
+        ) {
+            showConversionCompletedDialog.value = false
+        }
+    }
+
+    LaunchedEffect(key1 = Unit) {
+        eventFlow.collectLatest { event ->
+            when (event) {
+                is ExchangerUIEvent.OnConversionCompleted -> {
+                    showConversionCompletedDialog.value = true
+                }
+            }
+        }
+    }
 
     Column(
         modifier = Modifier.fillMaxSize()
@@ -147,5 +184,5 @@ fun ExchangerScreen(
 @Composable
 @Preview
 private fun ExchangerScreenPreview() {
-    ExchangerScreen(state = ExchangerState()) {}
+    ExchangerScreen(state = ExchangerState(), eventFlow = flow {  }) {}
 }

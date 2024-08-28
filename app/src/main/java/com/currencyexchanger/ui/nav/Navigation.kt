@@ -21,6 +21,7 @@ fun Navigation() {
             val exchangerState = viewModel.stateFlow.collectAsState()
             ExchangerScreen(
                 state = exchangerState.value,
+                eventFlow = viewModel.eventFlow,
                 onEvent = viewModel::onEvent
             )
         }
